@@ -1,5 +1,5 @@
 ---
-title: Deploy an R model for predictions on SQL Server
+title: "R tutorial: Deploy model"
 description: Tutorial showing how to deploy an R model on SQL Server for in-database analytics.
 ms.prod: sql
 ms.technology: machine-learning
@@ -8,9 +8,11 @@ ms.date: 11/26/2018
 ms.topic: tutorial
 author: dphansen
 ms.author: davidph
+ms.custom: seo-lt-2019
+monikerRange: ">=sql-server-2016||>=sql-server-linux-ver15||=sqlallproducts-allversions"
 ---
 # Deploy the R model and use it in SQL Server (walkthrough)
-[!INCLUDE[appliesto-ss-xxxx-xxxx-xxx-md-winonly](../../includes/appliesto-ss-xxxx-xxxx-xxx-md-winonly.md)]
+[!INCLUDE[appliesto-ss-xxxx-xxxx-xxx-md](../../includes/appliesto-ss-xxxx-xxxx-xxx-md.md)]
 
 In this lesson, learn how to deploy R models in a production environment by calling a trained model from a stored procedure. You can invoke the stored procedure from R or any application programming language that supports [!INCLUDE[tsql](../../includes/tsql-md.md)] (such as C#, Java, Python, and so forth) and use the model to make predictions on new observations.
 
@@ -67,7 +69,7 @@ Create a stored procedure, *PredictTipBatchMode*, that generates multiple predic
 
     + You use a SELECT statement to call the stored model from a SQL table. The model is retrieved from the table as **varbinary(max)** data, stored in the SQL variable _\@lmodel2_, and passed as the parameter *mod* to the system stored procedure [sp_execute_external_script](../../relational-databases/system-stored-procedures/sp-execute-external-script-transact-sql.md).
 
-    + The data used as inputs for scoring is defined as a SQL query and stored as a string in the SQL variable _\@input_. As data is retrieved from the database, it is stored in a data frame called *InputDataSet*, which is just the default name for input data to the [sp_execute_external_script](../../relational-databases/system-stored-procedures/sp-execute-external-script-transact-sql.md) procedure; you can define another variable name if needed by using the parameter *_\@input_data_1_name_*.
+    + The data used as inputs for scoring is defined as a SQL query and stored as a string in the SQL variable _\@input_. As data is retrieved from the database, it is stored in a data frame called *InputDataSet*, which is just the default name for input data to the [sp_execute_external_script](../../relational-databases/system-stored-procedures/sp-execute-external-script-transact-sql.md) procedure; you can define another variable name if needed by using the parameter _\@input_data_1_name_.
 
     + To generate the scores, the stored procedure calls the rxPredict function from the **RevoScaleR** library.
 
@@ -98,7 +100,7 @@ Create a stored procedure, *PredictTipBatchMode*, that generates multiple predic
 
     ```R
     input <- "N'SELECT TOP 10 a.passenger_count AS passenger_count, a.trip_time_in_secs AS trip_time_in_secs, a.trip_distance AS trip_distance, a.dropoff_datetime AS dropoff_datetime, dbo.fnCalculateDistance(pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude) AS direct_distance FROM (SELECT medallion, hack_license, pickup_datetime, passenger_count,trip_time_in_secs,trip_distance, dropoff_datetime, pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude FROM nyctaxi_sample)a LEFT OUTER JOIN ( SELECT medallion, hack_license, pickup_datetime FROM nyctaxi_sample  tablesample (1 percent) repeatable (98052)  )b ON a.medallion=b.medallion AND a.hack_license=b.hack_license AND  a.pickup_datetime=b.pickup_datetime WHERE b.medallion is null'";
-    q <- paste("EXEC PredictTipBatchMode @inquery = ", input, sep="");
+    q <- paste("EXEC PredictTipBatchMode @input = ", input, sep="");
     ```
 
 4. To run the stored procedure from R, call the **sqlQuery** method of the **RODBC** package and use the SQL connection `conn` that you defined earlier:
